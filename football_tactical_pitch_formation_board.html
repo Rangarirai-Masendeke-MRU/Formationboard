@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tactical Pitch & Formation Builder</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      user-select: none;
+    }
+    /* Pitch Grass Pattern */
+    .pitch-bg {
+      background-color: #15803d;
+      background-image: repeating-linear-gradient(
+        0deg,
+        #15803d,
+        #15803d 40px,
+        #166534 40px,
+        #166534 80px
+      );
+    }
+    .player-node {
+      touch-action: none;
+      transition: transform 0.05s ease-out, box-shadow 0.2s ease;
+    }
+    .player-node:hover {
+      z-index: 40 !important;
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+  </style>
+</head>
+<body class="h-full overflow-hidden flex flex-col md:flex-row">
+
+  <!-- TOP / LEFT CONTROL PANEL -->
+  <aside class="w-full md:w-80 lg:w-96 bg-slate-900 border-r border-slate-800 flex flex-col h-auto md:h-full shrink-0 z-20">
+    <!-- Header -->
+    <div class="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/80 backdrop-blur">
+      <div class="flex items-center space-x-2">
+        <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg border border-emerald-500/20">
+          <i data-lucide="shield" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-base sm:text-lg text-slate-50 tracking-tight leading-tight uppercase">LEAVING FC MANAGER'S TACTICAL BOARD</h1>
+          <span class="text-xs text-slate-400 font-medium">Matchday First XI Builder</span>
+        </div>
+      </div>
+      <button id="reset-pitch-btn" title="Reset Board" class="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors">
+        <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <!-- Staff Info Banner -->
+    <div class="px-4 py-2 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between text-xs">
+      <div class="flex items-center gap-1.5 text-slate-300">
+        <i data-lucide="user-check" class="w-3.5 h-3.5 text-emerald-400"></i>
+        <span><strong>Manager:</strong> Ranga</span>
+      </div>
+      <div class="flex items-center gap-1.5 text-slate-300">
+        <i data-lucide="briefcase" class="w-3.5 h-3.5 text-cyan-400"></i>
+        <span><strong>Tech Dir:</strong> Terry</span>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="flex border-b border-slate-800 bg-slate-950/50">
+      <button id="tab-formation" class="flex-1 py-3 px-4 text-xs font-semibold uppercase tracking-wider text-emerald-400 border-b-2 border-emerald-500 transition-colors flex items-center justify-center gap-2">
+        <i data-lucide="layout-grid" class="w-4 h-4"></i> Formations
+      </button>
+      <button id="tab-roster" class="flex-1 py-3 px-4 text-xs font-semibold uppercase tracking-wider text-slate-400 border-b-2 border-transparent hover:text-slate-200 transition-colors flex items-center justify-center gap-2">
+        <i data-lucide="users" class="w-4 h-4"></i> Roster & Roles
+      </button>
+      <button id="tab-tools" class="flex-1 py-3 px-4 text-xs font-semibold uppercase tracking-wider text-slate-400 border-b-2 border-transparent hover:text-slate-200 transition-colors flex items-center justify-center gap-2">
+        <i data-lucide="pen-tool" class="w-4 h-4"></i> Tactics
+      </button>
+    </div>
+
+    <!-- Tab Contents Container -->
+    <div class="flex-1 overflow-y-auto p-4 space-y-6">
+
+      <!-- SECTION 1: FORMATION SELECTOR -->
+      <div id="section-formation" class="space-y-4">
+        <div>
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-2">Preset Formations</label>
+          <div class="grid grid-cols-2 gap-2" id="formation-presets">
+            <!-- Buttons generated dynamically -->
+          </div>
+        </div>
+
+        <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80">
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-xs font-medium text-slate-400">Team Shape</span>
+            <span id="formation-title" class="text-sm font-bold text-emerald-400">4-3-3 Attacking</span>
+          </div>
+          <p id="formation-desc" class="text-xs text-slate-400 leading-relaxed">Balanced tactical shape with standard back line, dynamic mid three, and versatile wide forwards.</p>
+        </div>
+
+        <div>
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-2">Quick Strategy Presets</label>
+          <div class="flex flex-wrap gap-2">
+            <button class="tactical-preset-btn px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition" data-preset="high-press">
+              High Press
+            </button>
+            <button class="tactical-preset-btn px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition" data-preset="low-block">
+              Low Block
+            </button>
+            <button class="tactical-preset-btn px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition" data-preset="wide-attack">
+              Wide Overload
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 2: ROSTER & SQUAD MANAGEMENT -->
+      <div id="section-roster" class="space-y-5 hidden">
+        <!-- Starting XI Header -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-xs font-bold uppercase tracking-wider text-slate-400">Starting XI (11)</label>
+            <button id="quick-fill-btn" class="text-xs text-emerald-400 hover:underline flex items-center gap-1">
+              <i data-lucide="sparkles" class="w-3 h-3"></i> Auto-Assign Squad
+            </button>
+          </div>
+          <div id="starting-roster-list" class="space-y-2 max-h-60 overflow-y-auto pr-1">
+            <!-- Starting player inputs dynamically loaded -->
+          </div>
+        </div>
+
+        <!-- Substitutes Bench -->
+        <div class="pt-2 border-t border-slate-800">
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-xs font-bold uppercase tracking-wider text-slate-400">Substitutes Bench (12-22)</label>
+            <button id="add-sub-btn" class="text-xs text-emerald-400 hover:underline flex items-center gap-1">
+              <i data-lucide="plus" class="w-3 h-3"></i> Add Sub
+            </button>
+          </div>
+          <div id="substitutes-list" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+            <!-- Bench players listed here -->
+          </div>
+        </div>
+
+        <!-- Reserves -->
+        <div class="pt-2 border-t border-slate-800">
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-xs font-bold uppercase tracking-wider text-amber-400">Reserves (23+)</label>
+          </div>
+          <div id="reserves-list" class="space-y-2 max-h-32 overflow-y-auto pr-1">
+            <!-- Reserves listed here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 3: TACTICAL DRAWING & ANNOTATIONS -->
+      <div id="section-tools" class="space-y-4 hidden">
+        <div>
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-2">Drawing Tools</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="tool-arrow" class="tool-btn active flex items-center justify-center gap-2 p-2.5 rounded-lg border bg-emerald-500/20 border-emerald-500 text-emerald-400 text-xs font-semibold transition">
+              <i data-lucide="move-right" class="w-4 h-4"></i> Direct Arrow
+            </button>
+            <button id="tool-pass" class="tool-btn flex items-center justify-center gap-2 p-2.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-semibold transition">
+              <i data-lucide="minus-square" class="w-4 h-4"></i> Passing Line
+            </button>
+            <button id="tool-curve" class="tool-btn flex items-center justify-center gap-2 p-2.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-semibold transition">
+              <i data-lucide="spline" class="w-4 h-4"></i> Movement Run
+            </button>
+            <button id="tool-pointer" class="tool-btn flex items-center justify-center gap-2 p-2.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-semibold transition">
+              <i data-lucide="hand" class="w-4 h-4"></i> Drag Players
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-2">Line Color</label>
+          <div class="flex gap-2" id="color-picker font-semibold">
+            <button class="color-btn w-8 h-8 rounded-full border-2 border-white bg-amber-400 flex items-center justify-center" data-color="#fbbf24"></button>
+            <button class="color-btn w-8 h-8 rounded-full border-2 border-transparent bg-rose-500 flex items-center justify-center" data-color="#f43f5e"></button>
+            <button class="color-btn w-8 h-8 rounded-full border-2 border-transparent bg-cyan-400 flex items-center justify-center" data-color="#22d3ee"></button>
+            <button class="color-btn w-8 h-8 rounded-full border-2 border-transparent bg-white flex items-center justify-center" data-color="#ffffff"></button>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-800 flex gap-2">
+          <button id="clear-drawings-btn" class="w-full py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2">
+            <i data-lucide="trash-2" class="w-4 h-4"></i> Clear Drawings
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Match Information Footer -->
+    <div class="p-4 border-t border-slate-800 bg-slate-950/80 text-xs text-slate-400 flex justify-between items-center">
+      <span>Active XI: <strong id="active-count" class="text-emerald-400">11</strong> / 11</span>
+      <span class="text-slate-400 text-[10px]">Interactive Drag Enabled</span>
+    </div>
+  </aside>
+
+  <!-- MAIN PITCH DISPLAY AREA -->
+  <main class="flex-1 bg-slate-950 p-2 sm:p-4 lg:p-6 flex flex-col items-center justify-center relative overflow-hidden h-full">
+
+    <!-- Standalone Main Board Header Above Pitch -->
+    <div class="w-full max-w-4xl mb-3 text-center bg-slate-900 border border-slate-800 rounded-xl py-2.5 px-4 shadow-lg">
+      <h2 class="text-sm sm:text-base md:text-lg font-black tracking-widest text-emerald-400 uppercase">
+        LEAVING FC MANAGER'S TACTICAL BOARD
+      </h2>
+    </div>
+
+    <!-- Top Bar Overlay Info -->
+    <div class="w-full max-w-4xl flex items-center justify-between mb-3 text-slate-300 px-2">
+      <div class="flex items-center gap-3">
+        <span class="text-xs sm:text-sm font-bold tracking-wide text-white uppercase flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          Tactical View
+        </span>
+        <span id="active-formation-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-950 border border-emerald-500/30 text-emerald-300">
+          4-3-3
+        </span>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="toggle-roles-btn" class="px-3 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-xs font-medium text-slate-300 transition flex items-center gap-1.5">
+          <i data-lucide="tag" class="w-3.5 h-3.5"></i> Role Tags
+        </button>
+      </div>
+    </div>
+
+    <!-- Pitch Wrapper (Main Canvas / Node container) -->
+    <div id="pitch-container" class="relative w-full max-w-4xl aspect-[2/3] sm:aspect-[4/3] md:aspect-[16/10] pitch-bg rounded-2xl border-4 border-slate-800 shadow-2xl overflow-hidden flex items-center justify-center">
+
+      <!-- Canvas overlay for tactical drawing -->
+      <canvas id="drawing-canvas" class="absolute inset-0 z-10 pointer-events-auto cursor-crosshair"></canvas>
+
+      <!-- SVG pitch line markings -->
+      <svg class="absolute inset-0 w-full h-full pointer-events-none stroke-white/40 fill-none" stroke-width="2">
+        <!-- Outer Boundary -->
+        <rect x="3%" y="3%" width="94%" height="94%" rx="4" />
+        
+        <!-- Center Line -->
+        <line x1="50%" y1="3%" x2="50%" y2="97%" />
+        
+        <!-- Center Circle -->
+        <circle cx="50%" cy="50%" r="12%" />
+        <circle cx="50%" cy="50%" r="0.6%" class="fill-white/60" />
+
+        <!-- Left Goal Area (Home Pitch Side / Attack) -->
+        <rect x="3%" y="30%" width="6%" height="40%" />
+        <rect x="3%" y="18%" width="16%" height="64%" />
+        <path d="M 19% 40% A 12% 12% 0 0 1 19% 60%" />
+        <circle cx="14%" cy="50%" r="0.6%" class="fill-white/60" />
+
+        <!-- Right Goal Area (Opponent Pitch Side / Defense) -->
+        <rect x="91%" y="30%" width="6%" height="40%" />
+        <rect x="81%" y="18%" width="16%" height="64%" />
+        <path d="M 81% 40% A 12% 12% 0 0 0 81% 60%" />
+        <circle cx="86%" cy="50%" r="0.6%" class="fill-white/60" />
+      </svg>
+
+      <!-- Interactive Player Layer Container -->
+      <div id="players-layer" class="absolute inset-0 z-20 pointer-events-none">
+        <!-- Dynamic Player Nodes Will Be Rendered Here -->
+      </div>
+
+    </div>
+
+    <!-- Instructions / Quick Tip -->
+    <p class="text-[11px] text-slate-400 mt-2 text-center">
+      Drag any player badge across the pitch to modify positioning. Click a player to swap or customize roles.
+    </p>
+
+  </main>
+
+  <!-- PLAYER MODAL FOR EDITS & BENCH SWAP -->
+  <div id="player-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-bold text-slate-100 flex items-center gap-2">
+          <i data-lucide="user-cog" class="w-5 h-5 text-emerald-400"></i> Edit Player Info
+        </h3>
+        <button id="close-modal-btn" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <input type="hidden" id="modal-player-id">
+
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs font-semibold text-slate-400 block mb-1">Player Name</label>
+          <input type="text" id="modal-player-name" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-xs font-semibold text-slate-400 block mb-1">Squad Number</label>
+            <input type="number" id="modal-player-number" min="1" max="99" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500">
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-slate-400 block mb-1">Role / Position Tag</label>
+            <select id="modal-player-role" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500">
+              <option value="GK">GK - Goalkeeper</option>
+              <option value="CB">CB - Center Back</option>
+              <option value="LB">LB - Left Back</option>
+              <option value="RB">RB - Right Back</option>
+              <option value="CDM">CDM - Defensive Mid</option>
+              <option value="CM">CM - Central Mid</option>
+              <option value="CAM">CAM - Attacking Mid</option>
+              <option value="LW">LW - Left Wing</option>
+              <option value="RW">RW - Right Wing</option>
+              <option value="ST">ST - Striker</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="pt-2">
+          <label class="text-xs font-semibold text-slate-400 block mb-1">Swap With Bench Player</label>
+          <select id="modal-swap-select" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500">
+            <option value="">-- Select Bench Player to Swap --</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button id="save-player-modal" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2 rounded-lg text-xs transition">
+          Save Changes
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT LOGIC -->
+  <script>
+    // --- DEFAULT SQUAD ROSTER ---
+    const DEFAULT_ROSTER = [
+      // Starting XI
+      { id: 1, name: "Hungwe", number: 1, role: "GK", squadGroup: "starter", isStarter: true },
+      { id: 2, name: "Nare", number: 2, role: "RB", squadGroup: "starter", isStarter: true },
+      { id: 3, name: "Richie", number: 3, role: "LB", squadGroup: "starter", isStarter: true },
+      { id: 4, name: "Mlae", number: 4, role: "CB", squadGroup: "starter", isStarter: true },
+      { id: 5, name: "Njaya", number: 5, role: "CB", squadGroup: "starter", isStarter: true },
+      { id: 6, name: "Lee", number: 6, role: "CDM", squadGroup: "starter", isStarter: true },
+      { id: 7, name: "Bhudha", number: 7, role: "RW", squadGroup: "starter", isStarter: true },
+      { id: 8, name: "Giwus", number: 8, role: "CM", squadGroup: "starter", isStarter: true },
+      { id: 9, name: "Banga", number: 9, role: "ST", squadGroup: "starter", isStarter: true },
+      { id: 10, name: "Ethen", number: 10, role: "CAM", squadGroup: "starter", isStarter: true },
+      { id: 11, name: "Bruno", number: 11, role: "LW", squadGroup: "starter", isStarter: true },
+
+      // Substitutes (12-22)
+      { id: 12, name: "Zinks", number: 12, role: "SUB", squadGroup: "sub", isStarter: false },
+      { id: 13, name: "Gibela", number: 13, role: "SUB", squadGroup: "sub", isStarter: false },
+      { id: 14, name: "Maka", number: 14, role: "SUB", squadGroup: "sub", isStarter: false },
+      { id: 15, name: "Ruwo", number: 15, role: "SUB", squadGroup: "sub", isStarter: false },
+      { id: 16, name: "Tizzy", number: 16, role: "SUB", squadGroup: "sub", isStarter: false },
+      { id: 17, name: "Beast", number: 17, role: "SUB", squadGroup: "sub", isStarter: false },
+      { id: 18, name: "Singo", number: 18, role: "SUB", squadGroup: "sub", isStarter: false },
+      { id: 19, name: "Wuta", number: 19, role: "SUB", squadGroup: "sub", isStarter: false },
+      { id: 20, name: "Cloddie", number: 20, role: "SUB", squadGroup: "sub", isStarter: false },
+      { id: 21, name: "Nivri", number: 21, role: "SUB", squadGroup: "sub", isStarter: false },
+      { id: 22, name: "Drinka", number: 22, role: "SUB", squadGroup: "sub", isStarter: false },
+
+      // Reserves (23-24)
+      { id: 23, name: "Bishi", number: 23, role: "RES", squadGroup: "reserve", isStarter: false },
+      { id: 24, name: "Itsoe", number: 24, role: "RES", squadGroup: "reserve", isStarter: false }
+    ];
+
+    // --- FORMATION COORDINATES (% of width, % of height) ---
+    // Horizontal pitch orient: GK starts at left (x=7%), ST at right (x=88%)
+    const FORMATIONS = {
+      "4-3-3": {
+        name: "4-3-3 Attacking",
+        desc: "Classic wide attacking layout featuring 4 defenders, a triangular midfield, and 3 forwards.",
+        coords: [
+          { x: 7, y: 50, role: "GK" },
+          { x: 23, y: 15, role: "LB" },
+          { x: 21, y: 38, role: "CB" },
+          { x: 21, y: 62, role: "CB" },
+          { x: 23, y: 85, role: "RB" },
+          { x: 42, y: 50, role: "CDM" },
+          { x: 55, y: 30, role: "CM" },
+          { x: 55, y: 70, role: "CM" },
+          { x: 78, y: 18, role: "LW" },
+          { x: 86, y: 50, role: "ST" },
+          { x: 78, y: 82, role: "RW" }
+        ]
+      },
+      "4-2-3-1": {
+        name: "4-2-3-1 Holding",
+        desc: "Solid defensive spine with two holding midfielders supporting a central playmaker.",
+        coords: [
+          { x: 7, y: 50, role: "GK" },
+          { x: 23, y: 15, role: "LB" },
+          { x: 21, y: 38, role: "CB" },
+          { x: 21, y: 62, role: "CB" },
+          { x: 23, y: 85, role: "RB" },
+          { x: 40, y: 35, role: "CDM" },
+          { x: 40, y: 65, role: "CDM" },
+          { x: 62, y: 18, role: "LAM" },
+          { x: 64, y: 50, role: "CAM" },
+          { x: 62, y: 82, role: "RAM" },
+          { x: 86, y: 50, role: "ST" }
+        ]
+      },
+      "4-4-2": {
+        name: "4-4-2 Standard",
+        desc: "Traditional flat shape with strong bank of four and twin central strikers.",
+        coords: [
+          { x: 7, y: 50, role: "GK" },
+          { x: 23, y: 15, role: "LB" },
+          { x: 21, y: 38, role: "CB" },
+          { x: 21, y: 62, role: "CB" },
+          { x: 23, y: 85, role: "RB" },
+          { x: 52, y: 15, role: "LM" },
+          { x: 48, y: 38, role: "CM" },
+          { x: 48, y: 62, role: "CM" },
+          { x: 52, y: 85, role: "RM" },
+          { x: 84, y: 38, role: "ST" },
+          { x: 84, y: 62, role: "ST" }
+        ]
+      },
+      "3-5-2": {
+        name: "3-5-2 Wing-Back",
+        desc: "Midfield heavy formation providing numerical superiority in central zones.",
+        coords: [
+          { x: 7, y: 50, role: "GK" },
+          { x: 22, y: 24, role: "CB" },
+          { x: 20, y: 50, role: "CB" },
+          { x: 22, y: 76, role: "CB" },
+          { x: 48, y: 14, role: "LWB" },
+          { x: 42, y: 36, role: "CDM" },
+          { x: 55, y: 50, role: "CAM" },
+          { x: 42, y: 64, role: "CDM" },
+          { x: 48, y: 86, role: "RWB" },
+          { x: 84, y: 36, role: "ST" },
+          { x: 84, y: 64, role: "ST" }
+        ]
+      },
+      "3-4-3": {
+        name: "3-4-3 Aggressive",
+        desc: "High-octane system with three defenders and high wingers pressing high.",
+        coords: [
+          { x: 7, y: 50, role: "GK" },
+          { x: 22, y: 22, role: "CB" },
+          { x: 20, y: 50, role: "CB" },
+          { x: 22, y: 78, role: "CB" },
+          { x: 48, y: 15, role: "LM" },
+          { x: 46, y: 38, role: "CM" },
+          { x: 46, y: 62, role: "CM" },
+          { x: 48, y: 85, role: "RM" },
+          { x: 80, y: 20, role: "LW" },
+          { x: 86, y: 50, role: "ST" },
+          { x: 80, y: 80, role: "RW" }
+        ]
+      }
+    };
+
+    // --- APP STATE ---
+    let squad = JSON.parse(JSON.stringify(DEFAULT_ROSTER));
+    let currentFormationKey = "4-3-3";
+    let showRoles = true;
+    let activeTool = "arrow"; // 'arrow', 'pass', 'curve', 'pointer'
+    let activeColor = "#fbbf24";
+    let drawings = [];
+    let isDrawing = false;
+    let startPoint = null;
+
+    // --- DOM ELEMENTS ---
+    const pitchContainer = document.getElementById("pitch-container");
+    const playersLayer = document.getElementById("players-layer");
+    const canvas = document.getElementById("drawing-canvas");
+    const ctx = canvas.getContext("2d");
+
+    // --- INITIALIZATION ---
+    window.addEventListener("load", () => {
+      lucide.createIcons();
+      initCanvasSize();
+      renderFormationPresets();
+      applyFormation(currentFormationKey);
+      renderRosterLists();
+      setupEventListeners();
+    });
+
+    // Handle Window Resize
+    window.addEventListener("resize", () => {
+      initCanvasSize();
+      redrawCanvas();
+    });
+
+    function initCanvasSize() {
+      const rect = pitchContainer.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+    }
+
+    // --- RENDER FORMATION BUTTONS ---
+    function renderFormationPresets() {
+      const container = document.getElementById("formation-presets");
+      container.innerHTML = "";
+
+      Object.keys(FORMATIONS).forEach(key => {
+        const btn = document.createElement("button");
+        btn.className = `p-2.5 rounded-lg border text-xs font-bold text-center transition ${
+          key === currentFormationKey
+            ? "bg-emerald-500/20 border-emerald-500 text-emerald-400"
+            : "bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800"
+        }`;
+        btn.innerText = key;
+        btn.addEventListener("click", () => {
+          applyFormation(key);
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    // --- APPLY FORMATION ---
+    function applyFormation(key) {
+      currentFormationKey = key;
+      const form = FORMATIONS[key];
+
+      document.getElementById("formation-title").innerText = form.name;
+      document.getElementById("formation-desc").innerText = form.desc;
+      document.getElementById("active-formation-badge").innerText = key;
+
+      // Update preset active styles
+      renderFormationPresets();
+
+      // Assign position coordinates to starter players
+      const starters = squad.filter(p => p.isStarter);
+      form.coords.forEach((coord, idx) => {
+        if (starters[idx]) {
+          starters[idx].x = coord.x;
+          starters[idx].y = coord.y;
+          starters[idx].role = coord.role;
+        }
+      });
+
+      renderPlayerNodes();
+      renderRosterLists();
+    }
+
+    // --- RENDER PLAYER NODES ON THE PITCH (NUMBERS ONLY) ---
+    function renderPlayerNodes() {
+      playersLayer.innerHTML = "";
+      const starters = squad.filter(p => p.isStarter);
+
+      starters.forEach(player => {
+        const node = document.createElement("div");
+        node.className = "player-node absolute transform -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing pointer-events-auto flex flex-col items-center group";
+        node.style.left = `${player.x}%`;
+        node.style.top = `${player.y}%`;
+        node.setAttribute("data-id", player.id);
+
+        // Role badge colors
+        const isGK = player.role === "GK";
+        const bgGradient = isGK 
+          ? "from-amber-500 to-amber-700 border-amber-300 text-amber-950"
+          : "from-emerald-500 to-teal-700 border-emerald-300 text-slate-950";
+
+        node.innerHTML = `
+          <div class="relative flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br ${bgGradient} border-2 font-black text-base sm:text-lg shadow-xl transition-transform group-hover:scale-110">
+            <span class="drop-shadow-sm">${player.number}</span>
+            ${showRoles ? `
+              <span class="absolute -top-1.5 -right-1.5 px-1.5 py-0.2 bg-slate-900/90 text-[9px] font-bold text-emerald-400 rounded-full border border-slate-700 shadow">
+                ${player.role}
+              </span>
+            ` : ''}
+          </div>
+        `;
+
+        // Add Dragging Handlers
+        makeDraggable(node, player);
+
+        // Click to Open Player Edit Modal
+        node.addEventListener("dblclick", (e) => {
+          e.stopPropagation();
+          openPlayerModal(player.id);
+        });
+
+        playersLayer.appendChild(node);
+      });
+    }
+
+    // --- DRAG AND DROP PLAYER NODES ---
+    function makeDraggable(element, player) {
+      let isDragging = false;
+      let startX, startY;
+
+      const onMouseDown = (e) => {
+        if (activeTool !== 'pointer' && activeTool !== 'arrow' && activeTool !== 'pass' && activeTool !== 'curve') {
+          // allow drag in pointer mode
+        }
+        isDragging = true;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        startX = clientX;
+        startY = clientY;
+
+        document.addEventListener("mousemove", onMouseMove);
+        document.addEventListener("mouseup", onMouseUp);
+        document.addEventListener("touchmove", onMouseMove);
+        document.addEventListener("touchend", onMouseUp);
+      };
+
+      const onMouseMove = (e) => {
+        if (!isDragging) return;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+        const rect = pitchContainer.getBoundingClientRect();
+        let newX = ((clientX - rect.left) / rect.width) * 100;
+        let newY = ((clientY - rect.top) / rect.height) * 100;
+
+        // Bound to pitch boundary limits
+        newX = Math.max(3, Math.min(97, newX));
+        newY = Math.max(4, Math.min(96, newY));
+
+        player.x = newX;
+        player.y = newY;
+        element.style.left = `${newX}%`;
+        element.style.top = `${newY}%`;
+      };
+
+      const onMouseUp = () => {
+        isDragging = false;
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+        document.removeEventListener("touchmove", onMouseMove);
+        document.removeEventListener("touchend", onMouseUp);
+      };
+
+      element.addEventListener("mousedown", onMouseDown);
+      element.addEventListener("touchstart", onMouseDown);
+    }
+
+    // --- RENDER ROSTER LIST IN SIDEBAR ---
+    function renderRosterLists() {
+      const startersList = document.getElementById("starting-roster-list");
+      const subsList = document.getElementById("substitutes-list");
+      const reservesList = document.getElementById("reserves-list");
+
+      startersList.innerHTML = "";
+      subsList.innerHTML = "";
+      if (reservesList) reservesList.innerHTML = "";
+
+      const starters = squad.filter(p => p.isStarter);
+      const subs = squad.filter(p => !p.isStarter && p.number <= 22);
+      const reserves = squad.filter(p => !p.isStarter && p.number > 22);
+
+      document.getElementById("active-count").innerText = starters.length;
+
+      // Starter Items
+      starters.forEach(player => {
+        const div = document.createElement("div");
+        div.className = "flex items-center justify-between p-2 bg-slate-950/70 rounded-lg border border-slate-800/80 text-xs";
+        div.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center text-[10px]">
+              ${player.number}
+            </span>
+            <input type="text" value="${player.name}" data-id="${player.id}" class="player-name-input bg-transparent border-none text-slate-200 font-medium focus:outline-none focus:text-emerald-400 w-24 sm:w-28">
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="px-1.5 py-0.5 bg-slate-800 text-slate-300 font-semibold rounded text-[10px] border border-slate-700">
+              ${player.role}
+            </span>
+            <button onclick="openPlayerModal(${player.id})" class="text-slate-400 hover:text-emerald-400">
+              <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        `;
+        startersList.appendChild(div);
+      });
+
+      // Substitute Items
+      subs.forEach(player => {
+        const div = document.createElement("div");
+        div.className = "flex items-center justify-between p-2 bg-slate-950/40 rounded-lg border border-slate-800/40 text-xs";
+        div.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-slate-800 text-slate-400 font-bold flex items-center justify-center text-[10px]">
+              ${player.number}
+            </span>
+            <span class="text-slate-400 font-medium">${player.name}</span>
+          </div>
+          <button onclick="openPlayerModal(${player.id})" class="text-xs text-emerald-400 hover:underline">
+            Swap In
+          </button>
+        `;
+        subsList.appendChild(div);
+      });
+
+      // Reserve Items
+      if (reservesList) {
+        reserves.forEach(player => {
+          const div = document.createElement("div");
+          div.className = "flex items-center justify-between p-2 bg-slate-950/30 rounded-lg border border-slate-800/30 text-xs";
+          div.innerHTML = `
+            <div class="flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-amber-500/10 text-amber-400 font-bold flex items-center justify-center text-[10px]">
+                ${player.number}
+              </span>
+              <span class="text-slate-400 font-medium">${player.name}</span>
+            </div>
+            <button onclick="openPlayerModal(${player.id})" class="text-xs text-amber-400 hover:underline">
+              Swap In
+            </button>
+          `;
+          reservesList.appendChild(div);
+        });
+      }
+
+      // Attach inline input rename listeners
+      document.querySelectorAll(".player-name-input").forEach(input => {
+        input.addEventListener("change", (e) => {
+          const id = parseInt(e.target.getAttribute("data-id"));
+          const p = squad.find(item => item.id === id);
+          if (p) {
+            p.name = e.target.value;
+            renderPlayerNodes();
+          }
+        });
+      });
+
+      lucide.createIcons();
+    }
+
+    // --- QUICK STRATEGY PRESETS ---
+    function applyTacticalStrategy(strategy) {
+      const starters = squad.filter(p => p.isStarter);
+      if (starters.length < 11) return;
+
+      if (strategy === "high-press") {
+        starters.forEach(p => {
+          if (p.role !== 'GK') p.x = Math.min(92, p.x + 15);
+        });
+      } else if (strategy === "low-block") {
+        starters.forEach(p => {
+          if (p.role !== 'GK') p.x = Math.max(15, p.x - 15);
+        });
+      } else if (strategy === "wide-attack") {
+        starters.forEach(p => {
+          if (p.y < 50 && p.role !== 'GK') p.y = Math.max(8, p.y - 10);
+          if (p.y > 50 && p.role !== 'GK') p.y = Math.min(92, p.y + 10);
+        });
+      }
+      renderPlayerNodes();
+    }
+
+    // --- CANVAS DRAWING / TACTIC VECTOR TOOLS ---
+    function setupCanvasDrawing() {
+      canvas.addEventListener("mousedown", startDraw);
+      canvas.addEventListener("mousemove", draw);
+      canvas.addEventListener("mouseup", endDraw);
+
+      canvas.addEventListener("touchstart", (e) => {
+        const touch = e.touches[0];
+        startDraw({ clientX: touch.clientX, clientY: touch.clientY });
+      });
+      canvas.addEventListener("touchmove", (e) => {
+        const touch = e.touches[0];
+        draw({ clientX: touch.clientX, clientY: touch.clientY });
+      });
+      canvas.addEventListener("touchend", endDraw);
+    }
+
+    function getCanvasCoords(e) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      };
+    }
+
+    function startDraw(e) {
+      if (activeTool === "pointer") return;
+      isDrawing = true;
+      startPoint = getCanvasCoords(e);
+    }
+
+    function draw(e) {
+      if (!isDrawing || !startPoint || activeTool === "pointer") return;
+      const currentPoint = getCanvasCoords(e);
+
+      // Render temporary path on canvas
+      redrawCanvas();
+      drawShape(startPoint, currentPoint, activeTool, activeColor);
+    }
+
+    function endDraw(e) {
+      if (!isDrawing) return;
+      isDrawing = false;
+
+      // Finalize shape
+      if (startPoint) {
+        // Save drawing vector
+        drawings.push({
+          start: startPoint,
+          end: getCanvasCoords(e || { clientX: startPoint.x, clientY: startPoint.y }),
+          tool: activeTool,
+          color: activeColor
+        });
+        redrawCanvas();
+      }
+      startPoint = null;
+    }
+
+    function redrawCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawings.forEach(d => {
+        drawShape(d.start, d.end, d.tool, d.color);
+      });
+    }
+
+    function drawShape(start, end, tool, color) {
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 3;
+      ctx.lineCap = "round";
+
+      if (tool === "arrow") {
+        // Direct Attacking Movement Arrow
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
+
+        // Arrow head
+        const angle = Math.atan2(end.y - start.y, end.x - start.x);
+        const headlen = 10;
+        ctx.beginPath();
+        ctx.moveTo(end.x, end.y);
+        ctx.lineTo(end.x - headlen * Math.cos(angle - Math.PI / 6), end.y - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(end.x - headlen * Math.cos(angle + Math.PI / 6), end.y - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+
+      } else if (tool === "pass") {
+        // Dashed Passing Line
+        ctx.beginPath();
+        ctx.setLineDash([8, 6]);
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset line dash
+
+      } else if (tool === "curve") {
+        // Curved Player Run Vector
+        ctx.beginPath();
+        const midX = (start.x + end.x) / 2;
+        const midY = (start.y + end.y) / 2 - 30;
+        ctx.moveTo(start.x, start.y);
+        ctx.quadraticCurveTo(midX, midY, end.x, end.y);
+        ctx.stroke();
+      }
+    }
+
+    // --- MODAL & EDITS ---
+    function openPlayerModal(playerId) {
+      const player = squad.find(p => p.id === playerId);
+      if (!player) return;
+
+      document.getElementById("modal-player-id").value = player.id;
+      document.getElementById("modal-player-name").value = player.name;
+      document.getElementById("modal-player-number").value = player.number;
+      document.getElementById("modal-player-role").value = player.role;
+
+      // Populate Swap Select
+      const swapSelect = document.getElementById("modal-swap-select");
+      swapSelect.innerHTML = '<option value="">-- Keep Current Status --</option>';
+
+      const bench = squad.filter(p => p.id !== player.id);
+      bench.forEach(b => {
+        const opt = document.createElement("option");
+        opt.value = b.id;
+        opt.innerText = `${b.name} (#${b.number} - ${b.isStarter ? 'Starter' : 'Bench'})`;
+        swapSelect.appendChild(opt);
+      });
+
+      document.getElementById("player-modal").classList.remove("hidden");
+    }
+
+    function savePlayerModal() {
+      const id = parseInt(document.getElementById("modal-player-id").value);
+      const player = squad.find(p => p.id === id);
+      if (!player) return;
+
+      player.name = document.getElementById("modal-player-name").value;
+      player.number = parseInt(document.getElementById("modal-player-number").value) || player.number;
+      player.role = document.getElementById("modal-player-role").value;
+
+      const swapTargetId = parseInt(document.getElementById("modal-swap-select").value);
+      if (swapTargetId) {
+        const targetPlayer = squad.find(p => p.id === swapTargetId);
+        if (targetPlayer) {
+          // Swap starter statuses & coordinates
+          const tempStarter = player.isStarter;
+          const tempX = player.x;
+          const tempY = player.y;
+
+          player.isStarter = targetPlayer.isStarter;
+          player.x = targetPlayer.x;
+          player.y = targetPlayer.y;
+
+          targetPlayer.isStarter = tempStarter;
+          targetPlayer.x = tempX;
+          targetPlayer.y = tempY;
+        }
+      }
+
+      document.getElementById("player-modal").classList.add("hidden");
+      renderPlayerNodes();
+      renderRosterLists();
+    }
+
+    // --- EVENT LISTENERS & NAVIGATION TABS ---
+    function setupEventListeners() {
+      // Tab Navigation
+      const tabs = [
+        { btn: "tab-formation", sec: "section-formation" },
+        { btn: "tab-roster", sec: "section-roster" },
+        { btn: "tab-tools", sec: "section-tools" }
+      ];
+
+      tabs.forEach(tab => {
+        document.getElementById(tab.btn).addEventListener("click", () => {
+          tabs.forEach(t => {
+            document.getElementById(t.sec).classList.add("hidden");
+            const btnEl = document.getElementById(t.btn);
+            btnEl.classList.remove("text-emerald-400", "border-emerald-500");
+            btnEl.classList.add("text-slate-400", "border-transparent");
+          });
+          document.getElementById(tab.sec).classList.remove("hidden");
+          const activeBtn = document.getElementById(tab.btn);
+          activeBtn.classList.add("text-emerald-400", "border-emerald-500");
+          activeBtn.classList.remove("text-slate-400", "border-transparent");
+        });
+      });
+
+      // Quick Strategy Preset Buttons
+      document.querySelectorAll(".tactical-preset-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          applyTacticalStrategy(e.target.getAttribute("data-preset"));
+        });
+      });
+
+      // Toggle display settings
+      document.getElementById("toggle-roles-btn").addEventListener("click", () => {
+        showRoles = !showRoles;
+        renderPlayerNodes();
+      });
+
+      // Modal Handlers
+      document.getElementById("close-modal-btn").addEventListener("click", () => {
+        document.getElementById("player-modal").classList.add("hidden");
+      });
+      document.getElementById("save-player-modal").addEventListener("click", savePlayerModal);
+
+      // Tool Selection Buttons
+      const toolBtns = [
+        { id: "tool-arrow", name: "arrow" },
+        { id: "tool-pass", name: "pass" },
+        { id: "tool-curve", name: "curve" },
+        { id: "tool-pointer", name: "pointer" }
+      ];
+
+      toolBtns.forEach(t => {
+        document.getElementById(t.id).addEventListener("click", () => {
+          activeTool = t.name;
+          toolBtns.forEach(b => {
+            const btn = document.getElementById(b.id);
+            btn.className = "tool-btn flex items-center justify-center gap-2 p-2.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-semibold transition";
+          });
+          document.getElementById(t.id).className = "tool-btn active flex items-center justify-center gap-2 p-2.5 rounded-lg border bg-emerald-500/20 border-emerald-500 text-emerald-400 text-xs font-semibold transition";
+        });
+      });
+
+      // Color Picker
+      document.querySelectorAll(".color-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          document.querySelectorAll(".color-btn").forEach(b => b.classList.replace("border-white", "border-transparent"));
+          e.target.classList.replace("border-transparent", "border-white");
+          activeColor = e.target.getAttribute("data-color");
+        });
+      });
+
+      // Clear Canvas Drawings
+      document.getElementById("clear-drawings-btn").addEventListener("click", () => {
+        drawings = [];
+        redrawCanvas();
+      });
+
+      // Reset Pitch to Formation Defaults
+      document.getElementById("reset-pitch-btn").addEventListener("click", () => {
+        drawings = [];
+        redrawCanvas();
+        applyFormation(currentFormationKey);
+      });
+
+      // Auto Fill Default Roster
+      document.getElementById("quick-fill-btn").addEventListener("click", () => {
+        squad = JSON.parse(JSON.stringify(DEFAULT_ROSTER));
+        applyFormation(currentFormationKey);
+      });
+
+      // Add Bench Player Button
+      document.getElementById("add-sub-btn").addEventListener("click", () => {
+        const name = prompt("Enter new substitute player name:");
+        if (name) {
+          const newPlayer = {
+            id: Date.now(),
+            name: name,
+            number: squad.length + 1,
+            role: "SUB",
+            isStarter: false
+          };
+          squad.push(newPlayer);
+          renderRosterLists();
+        }
+      });
+
+      setupCanvasDrawing();
+    }
+  </script>
+</body>
+</html>
